@@ -43,13 +43,13 @@ test-local: ## Run tests locally
 	@source venv/bin/activate && \
 		pip install --quiet --upgrade pip setuptools wheel && \
 		pip install --quiet -r requirements.txt && \
-		python -m pytest -v || echo "$(YELLOW)⚠️  No pytest tests found, skipping...$(NC)"
+		python -m pytest tests/ -v --tb=short || (echo "$(RED)❌ Tests failed$(NC)" && exit 1)
 	@echo "$(GREEN)✅ Local tests completed$(NC)"
 
 test-docker: build ## Run tests in Docker container
 	@echo "$(GREEN)Running tests in Docker container...$(NC)"
 	@docker run --rm $(FULL_IMAGE_NAME) \
-		python -m pytest -v || echo "$(YELLOW)⚠️  No pytest tests found, skipping...$(NC)"
+		python -m pytest tests/ -v --tb=short || (echo "$(RED)❌ Tests failed$(NC)" && exit 1)
 	@echo "$(GREEN)✅ Docker tests completed$(NC)"
 
 test-health: ## Test health endpoint
@@ -86,7 +86,7 @@ docker-push: ## Push Docker image to Docker Hub (assumes image already built)
 	@docker push $(FULL_IMAGE_NAME)
 	@echo "$(GREEN)✅ Image pushed successfully to $(FULL_IMAGE_NAME)$(NC)"
 
-docker-release: build docker-push ## Build and push Docker image to Docker Hub
+docker-release: test build docker-push ## Run tests, build and push Docker image to Docker Hub
 	@echo "$(GREEN)✅ Release completed: $(FULL_IMAGE_NAME)$(NC)"
 
 lint: ## Run linter (if available)

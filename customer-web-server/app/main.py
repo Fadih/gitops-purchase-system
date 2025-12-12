@@ -10,7 +10,7 @@ import os
 import httpx
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from pydantic import BaseModel
 from confluent_kafka import Producer
@@ -211,7 +211,7 @@ async def home(request: Request):
     """
     Serve the main UI page with Buy and GetAllUserBuys forms
     """
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 @app.post("/buy")
@@ -225,7 +225,7 @@ async def buy(buy_request: BuyRequest):
         if buy_request.timestamp:
             event_timestamp = buy_request.timestamp
         else:
-            event_timestamp = datetime.utcnow().isoformat() + "Z"
+            event_timestamp = datetime.now(timezone.utc).isoformat()
         
         event_payload = {
             "userId": buy_request.userId,
@@ -305,8 +305,7 @@ async def get_all_user_buys(request: Request, userId: str):
             return JSONResponse(content={"purchases": purchases, "userId": userId})
         
         # Return HTML page
-        return templates.TemplateResponse("purchases.html", {
-            "request": request,
+        return templates.TemplateResponse(request, "purchases.html", {
             "purchases": purchases,
             "userId": userId
         })
