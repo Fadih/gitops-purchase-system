@@ -2,7 +2,7 @@
 
 # Variables
 IMAGE_NAME ?= fadihussien/unity
-IMAGE_TAG ?= backend-v1.0.0
+IMAGE_TAG ?= backend-v1.0.4
 FULL_IMAGE_NAME = $(IMAGE_NAME):$(IMAGE_TAG)
 PORT ?= 8000
 NAMESPACE ?= app

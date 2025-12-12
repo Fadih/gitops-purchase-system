@@ -17,6 +17,7 @@ from confluent_kafka import Producer
 from confluent_kafka import KafkaError as ConfluentKafkaError
 from confluent_kafka.admin import AdminClient
 from contextlib import asynccontextmanager
+from prometheus_fastapi_instrumentator import Instrumentator
 
 # Templates directory - handle both development and Docker paths
 base_dir = Path(__file__).parent.parent
@@ -199,6 +200,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Add Prometheus metrics instrumentation
+instrumentator = Instrumentator()
+instrumentator.instrument(app).expose(app)
 
 
 @app.get("/", response_class=HTMLResponse)

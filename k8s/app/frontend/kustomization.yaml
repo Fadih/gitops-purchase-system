@@ -21,4 +21,4 @@ labels:
 images:
   - name: frontend-app
     newName: fadihussien/unity
-    newTag: frontend-v1.0.3
+    newTag: frontend-v1.0.4

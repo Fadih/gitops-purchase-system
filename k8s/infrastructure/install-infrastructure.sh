@@ -1,12 +1,13 @@
 #!/bin/bash
 
 # Infrastructure Installation Script
-# Installs Kafka, MongoDB, KEDA, and Argo CD
+# Installs Kafka, MongoDB, KEDA, Prometheus, and Argo CD
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KEDA_HELM_DIR="${SCRIPT_DIR}/helm/keda"
+PROMETHEUS_DIR="${SCRIPT_DIR}/prometheus"
 ARGOCD_MANIFEST_URL="https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
 
 echo "🚀 Starting infrastructure installation..."
@@ -61,6 +62,26 @@ helm upgrade --install keda kedacore/keda \
 echo "✅ KEDA installed via Helm"
 echo ""
 
+# Install Prometheus
+echo "📦 Installing Prometheus..."
+
+# Create namespace first if it doesn't exist
+kubectl create namespace prometheus --dry-run=client -o yaml | kubectl apply -f -
+
+# Install all Prometheus resources
+echo "   Applying Prometheus manifests..."
+kubectl apply -f "${PROMETHEUS_DIR}/"
+echo "✅ Prometheus resources applied"
+echo ""
+
+# Wait for Prometheus to be ready
+echo "⏳ Waiting for Prometheus to be ready..."
+kubectl wait --for=condition=ready pod \
+  --selector=app=prometheus \
+  --timeout=300s \
+  --namespace=prometheus || echo "⚠️  Prometheus may still be starting..."
+echo ""
+
 # Install Argo CD using official manifests
 echo "📦 Installing Argo CD via official manifests..."
 
@@ -113,6 +134,9 @@ echo ""
 echo "KEDA pods:"
 kubectl get pods -n keda
 echo ""
+echo "Prometheus pods:"
+kubectl get pods -n prometheus
+echo ""
 echo "Argo CD pods:"
 kubectl get pods -n argocd
 echo ""
@@ -123,6 +147,7 @@ echo "Components installed:"
 echo "  - Kafka (namespace: kafka)"
 echo "  - MongoDB (namespace: mongo)"
 echo "  - KEDA (namespace: keda)"
+echo "  - Prometheus (namespace: prometheus)"
 echo "  - Argo CD (namespace: argocd)"
 echo ""
 echo "📚 Next steps:"

@@ -17,6 +17,7 @@ from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, DuplicateKeyError
 import threading
 import time
+from prometheus_fastapi_instrumentator import Instrumentator
 
 # Configuration from environment variables
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017/purchases")
@@ -248,6 +249,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Add Prometheus metrics instrumentation
+instrumentator = Instrumentator()
+instrumentator.instrument(app).expose(app)
 
 
 @app.get("/health")
