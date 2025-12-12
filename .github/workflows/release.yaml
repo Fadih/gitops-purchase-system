@@ -19,6 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
           fetch-depth: 0
 
       - name: Set up Docker Buildx
@@ -71,12 +72,39 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           
+          # Show current state
+          echo "=== Current Git State ==="
+          git status
+          echo ""
+          echo "Current branch/HEAD:"
+          git branch -a || git rev-parse --abbrev-ref HEAD || echo "Detached HEAD"
+          echo ""
+          
+          # Fetch all branches
+          echo "Fetching from origin..."
+          git fetch origin
+          
           # Checkout main branch to avoid detached HEAD state
           echo "Checking out main branch..."
-          git fetch origin main
-          git checkout -B main origin/main
+          git checkout -f main || git checkout -B main origin/main
           
-          # Update kustomization files (in case they were reverted by checkout)
+          # Verify we're on main branch
+          echo "=== After Checkout ==="
+          git status
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          echo "Current branch: $CURRENT_BRANCH"
+          
+          if [ "$CURRENT_BRANCH" != "main" ]; then
+            echo "⚠️  Not on main branch, attempting to checkout again..."
+            git checkout -B main origin/main
+            CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+            if [ "$CURRENT_BRANCH" != "main" ]; then
+              echo "❌ Failed to checkout main branch"
+              exit 1
+            fi
+          fi
+          
+          # Update kustomization files
           echo "📝 Updating kustomization files..."
           sed -i "s|newName:.*|newName: ${{ env.DOCKER_IMAGE_NAME }}|g; s|newTag:.*|newTag: frontend-${{ steps.extract_version.outputs.version }}|g" k8s/app/frontend/kustomization.yaml
           sed -i "s|newName:.*|newName: ${{ env.DOCKER_IMAGE_NAME }}|g; s|newTag:.*|newTag: backend-${{ steps.extract_version.outputs.version }}|g" k8s/app/backend/kustomization.yaml
@@ -87,7 +115,10 @@ jobs:
           if git diff --staged --quiet; then
             echo "⚠️  No changes to commit"
           else
+            echo "Committing changes..."
             git commit -m "chore: update image tags to ${{ steps.extract_version.outputs.version }} [skip ci]"
+            
+            echo "Pushing to origin/main..."
             git push origin main
             echo "✅ Kustomization changes committed and pushed"
           fi
