@@ -137,29 +137,47 @@ This creates ArgoCD Applications that:
 # Check ArgoCD applications
 kubectl get applications -n argocd
 
-# Access ArgoCD UI (get admin password)
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-kubectl port-forward svc/argocd-server -n argocd 8080:443
-# Open https://localhost:8080 (username: admin)
+# Access ArgoCD UI via NodePort (see "Access Applications" section below)
 ```
 
 📖 **Detailed Guide**: See [k8s/argocd/README.md](k8s/argocd/README.md)
 
 ### 3. Access Applications
 
-**Frontend Web Server**:
+**Frontend Web Server** (NodePort):
 ```bash
-kubectl port-forward svc/frontend-app -n app 8080:80
-# Open http://localhost:8080
+# Get node IP
+NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+# Or use external IP if available
+# NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
+
+# Access via NodePort 32222
+echo "Frontend available at: http://${NODE_IP}:32222"
+# Or directly: http://<node-ip>:32222
 ```
 
-**Backend API**:
+**ArgoCD UI** (NodePort):
+```bash
+# Get ArgoCD NodePort and node IP
+ARGOCD_NODEPORT=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.spec.ports[?(@.name=="https")].nodePort}')
+NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+
+# Get admin password
+ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+
+echo "ArgoCD UI: https://${NODE_IP}:${ARGOCD_NODEPORT}"
+echo "Username: admin"
+echo "Password: ${ARGOCD_PASSWORD}"
+# Note: Accept the self-signed certificate when accessing
+```
+
+**Backend API** (Port-forward):
 ```bash
 kubectl port-forward svc/backend-app -n app 8000:8000
 # API available at http://localhost:8000
 ```
 
-**Prometheus**:
+**Prometheus** (Port-forward):
 ```bash
 kubectl port-forward svc/prometheus-service -n prometheus 9090:9090
 # Open http://localhost:9090
