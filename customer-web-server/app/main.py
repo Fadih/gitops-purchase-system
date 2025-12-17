@@ -18,6 +18,7 @@ from confluent_kafka import KafkaError as ConfluentKafkaError
 from confluent_kafka.admin import AdminClient
 from contextlib import asynccontextmanager
 from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import Counter, Histogram, Gauge
 
 # Templates directory - handle both development and Docker paths
 base_dir = Path(__file__).parent.parent
@@ -39,6 +40,34 @@ logger = logging.getLogger(__name__)
 
 # Global Kafka producer instance
 kafka_producer: Optional[Producer] = None
+
+# Custom Prometheus metrics
+# Counter: tracks total number of purchase requests
+purchase_requests_total = Counter(
+    'purchase_requests_total',
+    'Total number of purchase requests',
+    ['status']  # Labels: 'success' or 'error'
+)
+
+# Counter with labels: tracks Kafka publish attempts
+kafka_publish_attempts_total = Counter(
+    'kafka_publish_attempts_total',
+    'Total number of Kafka publish attempts',
+    ['status']  # Labels: 'success' or 'failure'
+)
+
+# Histogram: tracks purchase amounts in different buckets
+purchase_amount = Histogram(
+    'purchase_amount_dollars',
+    'Purchase amount in dollars',
+    buckets=[0, 10, 50, 100, 500, 1000, 5000, float('inf')]  # Custom buckets
+)
+
+# Gauge: tracks current number of active users (example)
+active_users_gauge = Gauge(
+    'active_users_current',
+    'Current number of active users'
+)
 
 
 # Pydantic models
@@ -235,6 +264,9 @@ async def buy(buy_request: BuyRequest):
             "eventType": "purchase_request"
         }
         
+        # Track purchase amount in histogram
+        purchase_amount.observe(buy_request.price)
+        
         # Publish to Kafka
         kafka_success = publish_to_kafka(
             topic=KAFKA_TOPIC,
@@ -242,12 +274,18 @@ async def buy(buy_request: BuyRequest):
             value=event_payload
         )
         
+        # Track Kafka publish attempts
         if kafka_success:
+            kafka_publish_attempts_total.labels(status='success').inc()
             logger.info(f"Purchase event published to Kafka for user {buy_request.userId}")
             message = "Purchase request received and published to Kafka successfully"
         else:
+            kafka_publish_attempts_total.labels(status='failure').inc()
             logger.warning(f"Purchase event received but failed to publish to Kafka for user {buy_request.userId}")
             message = "Purchase request received, but Kafka is not available. Event may be lost."
+        
+        # Track successful purchase request
+        purchase_requests_total.labels(status='success').inc()
         
         return JSONResponse(
             status_code=200,
@@ -263,6 +301,8 @@ async def buy(buy_request: BuyRequest):
             }
         )
     except Exception as e:
+        # Track failed purchase request
+        purchase_requests_total.labels(status='error').inc()
         logger.error(f"Error processing purchase request: {str(e)}", exc_info=True)
         return JSONResponse(
             status_code=500,

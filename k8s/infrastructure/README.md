@@ -956,21 +956,4 @@ kubectl delete -f kafka-deployment.yaml
 kubectl delete namespace argocd prometheus keda mongo kafka
 ```
 
-**Warning**: Uninstalling will delete all data in MongoDB and Kafka. Backup important data before uninstalling.
-
-## Additional Resources
-
-- [Kafka Documentation](https://kafka.apache.org/documentation/)
-- [MongoDB Kubernetes Operator](https://www.mongodb.com/docs/kubernetes-operator/)
-- [KEDA Documentation](https://keda.sh/docs/)
-- [Prometheus Documentation](https://prometheus.io/docs/)
-- [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
-
-## Support
-
-For issues or questions:
-1. Check the troubleshooting section above
-2. Review component logs: `kubectl logs -n <namespace> <pod-name>`
-3. Check component status: `kubectl describe <resource> -n <namespace>`
-4. Review GitHub issues in the repository
 
