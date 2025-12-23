@@ -20,4 +20,4 @@ labels:
 images:
   - name: backend-app
     newName: fadihussien/unity
-    newTag: backend-1.1.4
+    newTag: backend-1.2.0
