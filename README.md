@@ -1,4 +1,4 @@
-# Unity Purchase System
+# gitops Purchase System
 
 A microservices-based purchase management system built with FastAPI, Kafka, MongoDB, and Kubernetes. The system handles purchase events, stores them in MongoDB, and provides web interfaces and APIs for managing customer purchases.
 
