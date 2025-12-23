@@ -1,7 +1,10 @@
 # gitops Purchase System
 
 A microservices-based purchase management system built with FastAPI, Kafka, MongoDB, and Kubernetes. The system handles purchase events, stores them in MongoDB, and provides web interfaces and APIs for managing customer purchases.
-## DOCS https://Fadih.github.io/gitops-purchase-system/
+
+## DOCS 
+https://Fadih.github.io/gitops-purchase-system/
+
 ## 🏗️ Architecture
 
 The system consists of two main applications:
